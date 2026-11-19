@@ -35,4 +35,16 @@ if (typeof url !== 'string' || !POST_URL.test(url)) {
   process.exit(1);
 }
 writeFileSync(join(OUTPUT_DIR, 'POST.json'), JSON.stringify({ url }) + '\n');
+// Read the copy back: a partial or corrupted write must fail here, not at the gate.
+let written: unknown;
+try {
+  written = JSON.parse(readFileSync(join(OUTPUT_DIR, 'POST.json'), 'utf8'));
+} catch (err) {
+  console.error(`written POST.json could not be read back: ${(err as Error).message}`);
+  process.exit(1);
+}
+if ((written as { url?: unknown } | null)?.url !== url) {
+  console.error(`written POST.json does not match the entry post (got ${JSON.stringify((written as { url?: unknown } | null)?.url)}).`);
+  process.exit(1);
+}
 console.log(`entry post: ${url}`);
